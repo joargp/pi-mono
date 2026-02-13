@@ -2324,6 +2324,7 @@ export class InteractiveMode {
 					this.addMessageToChat({
 						role: "compactionSummary",
 						tokensBefore: event.result.tokensBefore,
+						tokensAfter: event.result.tokensAfter,
 						summary: event.result.summary,
 						timestamp: Date.now(),
 					});
@@ -4425,7 +4426,12 @@ export class InteractiveMode {
 			this.rebuildChatFromMessages();
 
 			// Add compaction component at bottom so user sees it without scrolling
-			const msg = createCompactionSummaryMessage(result.summary, result.tokensBefore, new Date().toISOString());
+			const msg = createCompactionSummaryMessage(
+				result.summary,
+				result.tokensBefore,
+				new Date().toISOString(),
+				result.tokensAfter,
+			);
 			this.addMessageToChat(msg);
 
 			this.footer.invalidate();

@@ -32,13 +32,17 @@ export class CompactionSummaryMessageComponent extends Box {
 	private updateDisplay(): void {
 		this.clear();
 
-		const tokenStr = this.message.tokensBefore.toLocaleString();
+		const beforeStr = this.message.tokensBefore.toLocaleString();
+		const afterStr = this.message.tokensAfter != null ? `~${this.message.tokensAfter.toLocaleString()}` : undefined;
+		const compactedText = afterStr
+			? `Compacted from ${beforeStr} → ${afterStr} tokens`
+			: `Compacted from ${beforeStr} tokens`;
 		const label = theme.fg("customMessageLabel", `\x1b[1m[compaction]\x1b[22m`);
 		this.addChild(new Text(label, 0, 0));
 		this.addChild(new Spacer(1));
 
 		if (this.expanded) {
-			const header = `**Compacted from ${tokenStr} tokens**\n\n`;
+			const header = `**${compactedText}**\n\n`;
 			this.addChild(
 				new Markdown(header + this.message.summary, 0, 0, this.markdownTheme, {
 					color: (text: string) => theme.fg("customMessageText", text),
@@ -47,7 +51,7 @@ export class CompactionSummaryMessageComponent extends Box {
 		} else {
 			this.addChild(
 				new Text(
-					theme.fg("customMessageText", `Compacted from ${tokenStr} tokens (`) +
+					theme.fg("customMessageText", `${compactedText} (`) +
 						theme.fg("dim", editorKey("expandTools")) +
 						theme.fg("customMessageText", " to expand)"),
 					0,

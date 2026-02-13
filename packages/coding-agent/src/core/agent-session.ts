@@ -69,11 +69,17 @@ import {
 	wrapRegisteredTools,
 	wrapToolsWithExtensions,
 } from "./extensions/index.js";
-import type { BashExecutionMessage, CustomMessage } from "./messages.js";
+import {
+	type BashExecutionMessage,
+	type CustomMessage,
+	createBranchSummaryMessage,
+	createCompactionSummaryMessage,
+	createCustomMessage,
+} from "./messages.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { expandPromptTemplate, type PromptTemplate } from "./prompt-templates.js";
 import type { ResourceExtensionPaths, ResourceLoader } from "./resource-loader.js";
-import type { BranchSummaryEntry, CompactionEntry, SessionManager } from "./session-manager.js";
+import type { BranchSummaryEntry, CompactionEntry, SessionEntry, SessionManager } from "./session-manager.js";
 import { getLatestCompactionEntry } from "./session-manager.js";
 import type { SettingsManager } from "./settings-manager.js";
 import { BUILTIN_SLASH_COMMANDS, type SlashCommandInfo, type SlashCommandLocation } from "./slash-commands.js";
@@ -1539,6 +1545,37 @@ export class AgentSession {
 	// Compaction
 	// =========================================================================
 
+	private _estimatePostCompactionTokens(
+		pathEntries: SessionEntry[],
+		summary: string,
+		firstKeptEntryId: string,
+		tokensBefore: number,
+	): number | undefined {
+		const firstKeptIndex = pathEntries.findIndex((entry) => entry.id === firstKeptEntryId);
+		if (firstKeptIndex === -1) {
+			return undefined;
+		}
+
+		const estimatedMessages: AgentMessage[] = [
+			createCompactionSummaryMessage(summary, tokensBefore, new Date().toISOString()),
+		];
+
+		for (let i = firstKeptIndex; i < pathEntries.length; i++) {
+			const entry = pathEntries[i];
+			if (entry.type === "message") {
+				estimatedMessages.push(entry.message);
+			} else if (entry.type === "custom_message") {
+				estimatedMessages.push(
+					createCustomMessage(entry.customType, entry.content, entry.display, entry.details, entry.timestamp),
+				);
+			} else if (entry.type === "branch_summary") {
+				estimatedMessages.push(createBranchSummaryMessage(entry.summary, entry.fromId, entry.timestamp));
+			}
+		}
+
+		return estimateContextTokens(estimatedMessages).tokens;
+	}
+
 	/**
 	 * Manually compact the session context.
 	 * Aborts current agent operation first.
@@ -1624,7 +1661,17 @@ export class AgentSession {
 				throw new Error("Compaction cancelled");
 			}
 
-			this.sessionManager.appendCompaction(summary, firstKeptEntryId, tokensBefore, details, fromExtension);
+			// Estimate post-compaction context tokens from the compacted message set
+			const tokensAfter = this._estimatePostCompactionTokens(pathEntries, summary, firstKeptEntryId, tokensBefore);
+
+			this.sessionManager.appendCompaction(
+				summary,
+				firstKeptEntryId,
+				tokensBefore,
+				details,
+				fromExtension,
+				tokensAfter,
+			);
 			const newEntries = this.sessionManager.getEntries();
 			const sessionContext = this.sessionManager.buildSessionContext();
 			this.agent.replaceMessages(sessionContext.messages);
@@ -1646,6 +1693,7 @@ export class AgentSession {
 				summary,
 				firstKeptEntryId,
 				tokensBefore,
+				tokensAfter,
 				details,
 			};
 		} finally {
@@ -1842,7 +1890,38 @@ export class AgentSession {
 				return;
 			}
 
-			this.sessionManager.appendCompaction(summary, firstKeptEntryId, tokensBefore, details, fromExtension);
+			// Strip trailing error message from agent state before retrying
+			if (willRetry) {
+				const messages = this.agent.state.messages;
+				const lastMsg = messages[messages.length - 1];
+				if (lastMsg?.role === "assistant" && (lastMsg as AssistantMessage).stopReason === "error") {
+					this.agent.replaceMessages(messages.slice(0, -1));
+				}
+			}
+
+			// Estimate post-compaction context from the entries that will remain in context
+			const lastPathEntry = pathEntries[pathEntries.length - 1];
+			const hasTrailingErrorMessage =
+				willRetry &&
+				lastPathEntry?.type === "message" &&
+				lastPathEntry.message.role === "assistant" &&
+				lastPathEntry.message.stopReason === "error";
+			const estimateEntries = hasTrailingErrorMessage ? pathEntries.slice(0, -1) : pathEntries;
+			const tokensAfter = this._estimatePostCompactionTokens(
+				estimateEntries,
+				summary,
+				firstKeptEntryId,
+				tokensBefore,
+			);
+
+			this.sessionManager.appendCompaction(
+				summary,
+				firstKeptEntryId,
+				tokensBefore,
+				details,
+				fromExtension,
+				tokensAfter,
+			);
 			const newEntries = this.sessionManager.getEntries();
 			const sessionContext = this.sessionManager.buildSessionContext();
 			this.agent.replaceMessages(sessionContext.messages);
@@ -1864,17 +1943,12 @@ export class AgentSession {
 				summary,
 				firstKeptEntryId,
 				tokensBefore,
+				tokensAfter,
 				details,
 			};
 			this._emit({ type: "auto_compaction_end", result, aborted: false, willRetry });
 
 			if (willRetry) {
-				const messages = this.agent.state.messages;
-				const lastMsg = messages[messages.length - 1];
-				if (lastMsg?.role === "assistant" && (lastMsg as AssistantMessage).stopReason === "error") {
-					this.agent.replaceMessages(messages.slice(0, -1));
-				}
-
 				setTimeout(() => {
 					this.agent.continue().catch(() => {});
 				}, 100);

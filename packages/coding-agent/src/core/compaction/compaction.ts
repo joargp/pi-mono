@@ -87,7 +87,7 @@ function getMessageFromEntry(entry: SessionEntry): AgentMessage | undefined {
 		return createBranchSummaryMessage(entry.summary, entry.fromId, entry.timestamp);
 	}
 	if (entry.type === "compaction") {
-		return createCompactionSummaryMessage(entry.summary, entry.tokensBefore, entry.timestamp);
+		return createCompactionSummaryMessage(entry.summary, entry.tokensBefore, entry.timestamp, entry.tokensAfter);
 	}
 	return undefined;
 }
@@ -97,6 +97,8 @@ export interface CompactionResult<T = unknown> {
 	summary: string;
 	firstKeptEntryId: string;
 	tokensBefore: number;
+	/** Estimated context tokens after compaction (chars/4 heuristic on new message set) */
+	tokensAfter?: number;
 	/** Extension-specific data (e.g., ArtifactIndex, version markers for structured compaction) */
 	details?: T;
 }
