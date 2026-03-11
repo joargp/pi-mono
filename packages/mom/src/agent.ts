@@ -404,6 +404,10 @@ export function getOrCreateRunner(sandboxConfig: SandboxConfig, channelId: strin
 	return runner;
 }
 
+export function resetRunner(channelId: string): void {
+	channelRunners.delete(channelId);
+}
+
 /**
  * Create a new AgentRunner for a channel.
  * Sets up the session and subscribes to events once.
@@ -657,10 +661,8 @@ function createRunner(sandboxConfig: SandboxConfig, channelId: string, channelDi
 			// Reload messages from context.jsonl
 			// This picks up any messages synced above
 			const reloadedSession = sessionManager.buildSessionContext();
-			if (reloadedSession.messages.length > 0) {
-				agent.replaceMessages(reloadedSession.messages);
-				log.logInfo(`[${channelId}] Reloaded ${reloadedSession.messages.length} messages from context`);
-			}
+			agent.replaceMessages(reloadedSession.messages);
+			log.logInfo(`[${channelId}] Reloaded ${reloadedSession.messages.length} messages from context`);
 
 			// Update system prompt with fresh memory, channel/user info, and skills
 			const memory = getMemory(channelDir);

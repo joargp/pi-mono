@@ -136,6 +136,13 @@ Mom is a Node.js app that runs on your host machine. She connects to Slack via S
 4. Any files or tools mom creates are stored in the channel's directory
 5. Mom's direct reply is stored in `log.jsonl`, while details like tool call results are kept in `context.jsonl` which she'll see and thus "remember" on subsequent requests
 
+**Control commands**
+- `stop` (DM) / `@mom stop` (channel): abort current run
+- `clear session`, `reset session`, or `clear context` (DM or @mention): clear active context for that channel/DM
+  - This is **per channel/DM only**
+  - `log.jsonl` is preserved for audit/search history
+  - Old messages at/before reset are not re-imported into `context.jsonl`
+
 **Context Management:**
 - Mom has limited context depending on the LLM model used. E.g. Claude Opus or Sonnet 4.5 can process a maximum of 200k tokens
 - When the context exceeds the LLM's context window size, mom compacts the context: keeps recent messages and tool results in full, summarizes older ones

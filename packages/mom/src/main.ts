@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { join, resolve } from "path";
-import { type AgentRunner, getOrCreateRunner } from "./agent.js";
+import { type AgentRunner, getOrCreateRunner, resetRunner } from "./agent.js";
+import { clearChannelSessionContext } from "./context.js";
 import { downloadChannel } from "./download.js";
 import { createEventsWatcher } from "./events.js";
 import * as log from "./log.js";
@@ -294,6 +295,23 @@ const handler: MomHandler = {
 		} else {
 			await slack.postMessage(channelId, "_Nothing running_");
 		}
+	},
+
+	async handleClearSession(channelId: string, ts: string, slack: SlackBot): Promise<void> {
+		const state = getState(channelId);
+		if (state.running) {
+			await slack.postMessage(channelId, "_Already working. Say `stop` first, then clear session._");
+			return;
+		}
+
+		const channelDir = join(workingDir, channelId);
+		clearChannelSessionContext(channelDir, ts);
+		resetRunner(channelId);
+		state.runner = getOrCreateRunner(sandbox, channelId, channelDir);
+		await slack.postMessage(
+			channelId,
+			"_Session cleared for this channel. Context reset, but log history is preserved in `log.jsonl`._",
+		);
 	},
 
 	async handleEvent(event: SlackEvent, slack: SlackBot, isEvent?: boolean): Promise<void> {

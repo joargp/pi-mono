@@ -12,7 +12,7 @@
 
 import type { UserMessage } from "@mariozechner/pi-ai";
 import { type SessionManager, type SessionMessageEntry, SettingsManager } from "@mariozechner/pi-coding-agent";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 
 // ============================================================================
@@ -26,6 +26,34 @@ interface LogMessage {
 	userName?: string;
 	text?: string;
 	isBot?: boolean;
+}
+
+interface SessionResetState {
+	resetBeforeTs?: string;
+}
+
+function getSessionResetState(channelDir: string): SessionResetState {
+	const path = join(channelDir, "session-reset.json");
+	if (!existsSync(path)) return {};
+	try {
+		return JSON.parse(readFileSync(path, "utf-8")) as SessionResetState;
+	} catch {
+		return {};
+	}
+}
+
+/**
+ * Clear channel session context while preserving full history in log.jsonl.
+ * Future syncs ignore messages at or before resetBeforeTs so old history is not re-imported.
+ */
+export function clearChannelSessionContext(channelDir: string, resetBeforeTs: string): void {
+	const contextPath = join(channelDir, "context.jsonl");
+	if (existsSync(contextPath)) {
+		rmSync(contextPath);
+	}
+
+	const resetStatePath = join(channelDir, "session-reset.json");
+	writeFileSync(resetStatePath, JSON.stringify({ resetBeforeTs }, null, 2), "utf-8");
 }
 
 /**
@@ -92,6 +120,7 @@ export function syncLogToSessionManager(
 	// Read log.jsonl and find user messages not in context
 	const logContent = readFileSync(logFile, "utf-8");
 	const logLines = logContent.trim().split("\n").filter(Boolean);
+	const { resetBeforeTs } = getSessionResetState(channelDir);
 
 	const newMessages: Array<{ timestamp: number; message: UserMessage }> = [];
 
@@ -105,6 +134,9 @@ export function syncLogToSessionManager(
 
 			// Skip the current message being processed (will be added via prompt())
 			if (excludeSlackTs && slackTs === excludeSlackTs) continue;
+
+			// Skip entries at/before reset marker when session was cleared
+			if (resetBeforeTs && parseFloat(slackTs) <= parseFloat(resetBeforeTs)) continue;
 
 			// Skip bot messages - added through agent flow
 			if (logMsg.isBot) continue;

@@ -83,6 +83,12 @@ export interface MomHandler {
 	 * Called when user says "stop" while mom is running
 	 */
 	handleStop(channelId: string, slack: SlackBot): Promise<void>;
+
+	/**
+	 * Handle clear-session command (ASYNC)
+	 * Clears active context for this channel/DM without deleting log history
+	 */
+	handleClearSession(channelId: string, ts: string, slack: SlackBot): Promise<void>;
 }
 
 // ============================================================================
@@ -269,6 +275,15 @@ export class SlackBot {
 		return queue;
 	}
 
+	private isStopCommand(text: string): boolean {
+		return text.toLowerCase().trim() === "stop";
+	}
+
+	private isClearSessionCommand(text: string): boolean {
+		const normalized = text.toLowerCase().trim();
+		return normalized === "clear session" || normalized === "reset session" || normalized === "clear context";
+	}
+
 	private setupEventHandlers(): void {
 		// Channel @mentions
 		this.socketClient.on("app_mention", ({ event, ack }) => {
@@ -308,12 +323,21 @@ export class SlackBot {
 				return;
 			}
 
-			// Check for stop command - execute immediately, don't queue!
-			if (slackEvent.text.toLowerCase().trim() === "stop") {
+			// Check for control commands - execute immediately, don't queue
+			if (this.isStopCommand(slackEvent.text)) {
 				if (this.handler.isRunning(e.channel)) {
 					this.handler.handleStop(e.channel, this); // Don't await, don't queue
 				} else {
 					this.postMessage(e.channel, "_Nothing running_");
+				}
+				ack();
+				return;
+			}
+			if (this.isClearSessionCommand(slackEvent.text)) {
+				if (this.handler.isRunning(e.channel)) {
+					this.postMessage(e.channel, "_Already working. Say `@mom stop` first, then clear session._");
+				} else {
+					this.handler.handleClearSession(e.channel, e.ts, this); // Don't await, don't queue
 				}
 				ack();
 				return;
@@ -387,12 +411,21 @@ export class SlackBot {
 
 			// Only trigger handler for DMs
 			if (isDM) {
-				// Check for stop command - execute immediately, don't queue!
-				if (slackEvent.text.toLowerCase().trim() === "stop") {
+				// Check for control commands - execute immediately, don't queue
+				if (this.isStopCommand(slackEvent.text)) {
 					if (this.handler.isRunning(e.channel)) {
 						this.handler.handleStop(e.channel, this); // Don't await, don't queue
 					} else {
 						this.postMessage(e.channel, "_Nothing running_");
+					}
+					ack();
+					return;
+				}
+				if (this.isClearSessionCommand(slackEvent.text)) {
+					if (this.handler.isRunning(e.channel)) {
+						this.postMessage(e.channel, "_Already working. Say `stop` first, then clear session._");
+					} else {
+						this.handler.handleClearSession(e.channel, e.ts, this); // Don't await, don't queue
 					}
 					ack();
 					return;
