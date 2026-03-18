@@ -546,11 +546,55 @@ export interface MessageStartEvent {
 	message: AgentMessage;
 }
 
-/** Fired during assistant message streaming with token-by-token updates */
+/** Fired during assistant message streaming for tool call updates only */
 export interface MessageUpdateEvent {
 	type: "message_update";
 	message: AgentMessage;
 	assistantMessageEvent: AssistantMessageEvent;
+}
+
+/** Fired when text content streaming starts */
+export interface TextStartEvent {
+	type: "text_start";
+	contentIndex: number;
+	message: AgentMessage;
+}
+
+/** Fired for each text content delta (lightweight, no full message) */
+export interface TextDeltaEvent {
+	type: "text_delta";
+	contentIndex: number;
+	delta: string;
+}
+
+/** Fired when text content streaming ends (includes final accumulated text) */
+export interface TextEndEvent {
+	type: "text_end";
+	contentIndex: number;
+	content: string;
+	message: AgentMessage;
+}
+
+/** Fired when thinking content streaming starts */
+export interface ThinkingStartEvent {
+	type: "thinking_start";
+	contentIndex: number;
+	message: AgentMessage;
+}
+
+/** Fired for each thinking content delta (lightweight, no full message) */
+export interface ThinkingDeltaEvent {
+	type: "thinking_delta";
+	contentIndex: number;
+	delta: string;
+}
+
+/** Fired when thinking content streaming ends (includes final accumulated thinking) */
+export interface ThinkingEndEvent {
+	type: "thinking_end";
+	contentIndex: number;
+	content: string;
+	message: AgentMessage;
 }
 
 /** Fired when a message ends */
@@ -828,6 +872,12 @@ export type ExtensionEvent =
 	| TurnEndEvent
 	| MessageStartEvent
 	| MessageUpdateEvent
+	| TextStartEvent
+	| TextDeltaEvent
+	| TextEndEvent
+	| ThinkingStartEvent
+	| ThinkingDeltaEvent
+	| ThinkingEndEvent
 	| MessageEndEvent
 	| ToolExecutionStartEvent
 	| ToolExecutionUpdateEvent
@@ -982,6 +1032,12 @@ export interface ExtensionAPI {
 	on(event: "turn_end", handler: ExtensionHandler<TurnEndEvent>): void;
 	on(event: "message_start", handler: ExtensionHandler<MessageStartEvent>): void;
 	on(event: "message_update", handler: ExtensionHandler<MessageUpdateEvent>): void;
+	on(event: "text_start", handler: ExtensionHandler<TextStartEvent>): void;
+	on(event: "text_delta", handler: ExtensionHandler<TextDeltaEvent>): void;
+	on(event: "text_end", handler: ExtensionHandler<TextEndEvent>): void;
+	on(event: "thinking_start", handler: ExtensionHandler<ThinkingStartEvent>): void;
+	on(event: "thinking_delta", handler: ExtensionHandler<ThinkingDeltaEvent>): void;
+	on(event: "thinking_end", handler: ExtensionHandler<ThinkingEndEvent>): void;
 	on(event: "message_end", handler: ExtensionHandler<MessageEndEvent>): void;
 	on(event: "tool_execution_start", handler: ExtensionHandler<ToolExecutionStartEvent>): void;
 	on(event: "tool_execution_update", handler: ExtensionHandler<ToolExecutionUpdateEvent>): void;

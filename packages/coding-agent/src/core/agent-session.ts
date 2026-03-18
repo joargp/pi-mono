@@ -58,6 +58,12 @@ import {
 	type SessionBeforeSwitchResult,
 	type SessionBeforeTreeResult,
 	type ShutdownHandler,
+	type TextDeltaEvent,
+	type TextEndEvent,
+	type TextStartEvent,
+	type ThinkingDeltaEvent,
+	type ThinkingEndEvent,
+	type ThinkingStartEvent,
 	type ToolDefinition,
 	type ToolExecutionEndEvent,
 	type ToolExecutionStartEvent,
@@ -523,6 +529,50 @@ export class AgentSession {
 				type: "message_update",
 				message: event.message,
 				assistantMessageEvent: event.assistantMessageEvent,
+			};
+			await this._extensionRunner.emit(extensionEvent);
+		} else if (event.type === "text_start") {
+			const extensionEvent: TextStartEvent = {
+				type: "text_start",
+				contentIndex: event.contentIndex,
+				message: event.message,
+			};
+			await this._extensionRunner.emit(extensionEvent);
+		} else if (event.type === "text_delta") {
+			const extensionEvent: TextDeltaEvent = {
+				type: "text_delta",
+				contentIndex: event.contentIndex,
+				delta: event.delta,
+			};
+			await this._extensionRunner.emit(extensionEvent);
+		} else if (event.type === "text_end") {
+			const extensionEvent: TextEndEvent = {
+				type: "text_end",
+				contentIndex: event.contentIndex,
+				content: event.content,
+				message: event.message,
+			};
+			await this._extensionRunner.emit(extensionEvent);
+		} else if (event.type === "thinking_start") {
+			const extensionEvent: ThinkingStartEvent = {
+				type: "thinking_start",
+				contentIndex: event.contentIndex,
+				message: event.message,
+			};
+			await this._extensionRunner.emit(extensionEvent);
+		} else if (event.type === "thinking_delta") {
+			const extensionEvent: ThinkingDeltaEvent = {
+				type: "thinking_delta",
+				contentIndex: event.contentIndex,
+				delta: event.delta,
+			};
+			await this._extensionRunner.emit(extensionEvent);
+		} else if (event.type === "thinking_end") {
+			const extensionEvent: ThinkingEndEvent = {
+				type: "thinking_end",
+				contentIndex: event.contentIndex,
+				content: event.content,
+				message: event.message,
 			};
 			await this._extensionRunner.emit(extensionEvent);
 		} else if (event.type === "message_end") {

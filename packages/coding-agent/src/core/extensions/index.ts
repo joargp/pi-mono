@@ -129,6 +129,12 @@ export type {
 	SetModelHandler,
 	SetThinkingLevelHandler,
 	TerminalInputHandler,
+	TextDeltaEvent,
+	TextEndEvent,
+	TextStartEvent,
+	ThinkingDeltaEvent,
+	ThinkingEndEvent,
+	ThinkingStartEvent,
 	// Events - Tool
 	ToolCallEvent,
 	ToolCallEventResult,

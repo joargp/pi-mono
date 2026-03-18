@@ -2153,6 +2153,32 @@ export class InteractiveMode {
 				}
 				break;
 
+			case "text_start":
+			case "thinking_start":
+				if (this.streamingComponent && this.streamingMessage) {
+					this.streamingComponent.updateContent(this.streamingMessage);
+					this.ui.requestRender();
+				}
+				break;
+
+			case "text_delta":
+			case "thinking_delta":
+				// Content is mutated in-place via shared reference - just re-render
+				if (this.streamingComponent && this.streamingMessage) {
+					this.streamingComponent.updateContent(this.streamingMessage);
+					this.ui.requestRender();
+				}
+				break;
+
+			case "text_end":
+			case "thinking_end":
+				if (this.streamingComponent) {
+					this.streamingMessage = event.message as AssistantMessage;
+					this.streamingComponent.updateContent(this.streamingMessage);
+					this.ui.requestRender();
+				}
+				break;
+
 			case "message_update":
 				if (this.streamingComponent && event.message.role === "assistant") {
 					this.streamingMessage = event.message;
