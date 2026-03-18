@@ -39,8 +39,8 @@ if (available.length > 0) {
 	});
 
 	session.subscribe((event) => {
-		if (event.type === "message_update" && event.assistantMessageEvent.type === "text_delta") {
-			process.stdout.write(event.assistantMessageEvent.delta);
+		if (event.type === "text_delta") {
+			process.stdout.write(event.delta);
 		}
 	});
 

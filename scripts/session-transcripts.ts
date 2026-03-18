@@ -90,11 +90,8 @@ function runSubagent(prompt: string, cwd: string): Promise<{ success: boolean }>
 			try {
 				const event: JsonEvent = JSON.parse(line);
 
-				if (event.type === "message_update" && event.assistantMessageEvent) {
-					const msgEvent = event.assistantMessageEvent;
-					if (msgEvent.type === "text_delta" && msgEvent.delta) {
-						textBuffer += msgEvent.delta;
-					}
+				if (event.type === "text_delta" && event.delta) {
+					textBuffer += event.delta;
 				} else if (event.type === "tool_execution_start" && event.toolName) {
 					// Print accumulated text before tool starts
 					if (textBuffer.trim()) {

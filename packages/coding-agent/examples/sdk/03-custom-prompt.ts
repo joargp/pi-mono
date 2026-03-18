@@ -21,8 +21,8 @@ const { session: session1 } = await createAgentSession({
 });
 
 session1.subscribe((event) => {
-	if (event.type === "message_update" && event.assistantMessageEvent.type === "text_delta") {
-		process.stdout.write(event.assistantMessageEvent.delta);
+	if (event.type === "text_delta") {
+		process.stdout.write(event.delta);
 	}
 });
 
@@ -45,8 +45,8 @@ const { session: session2 } = await createAgentSession({
 });
 
 session2.subscribe((event) => {
-	if (event.type === "message_update" && event.assistantMessageEvent.type === "text_delta") {
-		process.stdout.write(event.assistantMessageEvent.delta);
+	if (event.type === "text_delta") {
+		process.stdout.write(event.delta);
 	}
 });
 

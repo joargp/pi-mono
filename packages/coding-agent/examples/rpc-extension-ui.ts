@@ -535,22 +535,19 @@ async function main() {
 			return;
 		}
 
-		if (data.type === "message_update") {
-			const evt = data.assistantMessageEvent as Record<string, unknown> | undefined;
-			if (evt?.type === "text_delta") {
-				if (!hasTextOutput) {
-					hasTextOutput = true;
-					outputLog.append("");
-					outputLog.append(`${BLUE}${BOLD}Agent:${RESET}`);
-				}
-				const delta = evt.delta as string;
-				const parts = delta.split("\n");
-				for (let i = 0; i < parts.length; i++) {
-					if (i > 0) outputLog.append("");
-					if (parts[i]) outputLog.appendRaw(parts[i]);
-				}
-				tui.requestRender();
+		if (data.type === "text_delta") {
+			if (!hasTextOutput) {
+				hasTextOutput = true;
+				outputLog.append("");
+				outputLog.append(`${BLUE}${BOLD}Agent:${RESET}`);
 			}
+			const delta = data.delta as string;
+			const parts = delta.split("\n");
+			for (let i = 0; i < parts.length; i++) {
+				if (i > 0) outputLog.append("");
+				if (parts[i]) outputLog.appendRaw(parts[i]);
+			}
+			tui.requestRender();
 			return;
 		}
 

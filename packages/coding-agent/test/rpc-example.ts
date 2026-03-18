@@ -20,11 +20,8 @@ async function main() {
 
 	// Stream events to console
 	client.onEvent((event) => {
-		if (event.type === "message_update") {
-			const { assistantMessageEvent } = event;
-			if (assistantMessageEvent.type === "text_delta" || assistantMessageEvent.type === "thinking_delta") {
-				process.stdout.write(assistantMessageEvent.delta);
-			}
+		if (event.type === "text_delta" || event.type === "thinking_delta") {
+			process.stdout.write(event.delta);
 		}
 
 		if (event.type === "tool_execution_start") {
