@@ -249,11 +249,79 @@ async function streamAssistantResponse(
 				break;
 
 			case "text_start":
+				if (partialMessage) {
+					partialMessage = event.partial;
+					context.messages[context.messages.length - 1] = partialMessage;
+					stream.push({
+						type: "text_start",
+						contentIndex: event.contentIndex,
+						message: { ...partialMessage },
+					});
+				}
+				break;
+
 			case "text_delta":
+				if (partialMessage) {
+					partialMessage = event.partial;
+					context.messages[context.messages.length - 1] = partialMessage;
+					stream.push({
+						type: "text_delta",
+						contentIndex: event.contentIndex,
+						delta: event.delta,
+					});
+				}
+				break;
+
 			case "text_end":
+				if (partialMessage) {
+					partialMessage = event.partial;
+					context.messages[context.messages.length - 1] = partialMessage;
+					stream.push({
+						type: "text_end",
+						contentIndex: event.contentIndex,
+						content: event.content,
+						message: { ...partialMessage },
+					});
+				}
+				break;
+
 			case "thinking_start":
+				if (partialMessage) {
+					partialMessage = event.partial;
+					context.messages[context.messages.length - 1] = partialMessage;
+					stream.push({
+						type: "thinking_start",
+						contentIndex: event.contentIndex,
+						message: { ...partialMessage },
+					});
+				}
+				break;
+
 			case "thinking_delta":
+				if (partialMessage) {
+					partialMessage = event.partial;
+					context.messages[context.messages.length - 1] = partialMessage;
+					stream.push({
+						type: "thinking_delta",
+						contentIndex: event.contentIndex,
+						delta: event.delta,
+					});
+				}
+				break;
+
 			case "thinking_end":
+				if (partialMessage) {
+					partialMessage = event.partial;
+					context.messages[context.messages.length - 1] = partialMessage;
+					stream.push({
+						type: "thinking_end",
+						contentIndex: event.contentIndex,
+						content: event.content,
+						message: { ...partialMessage },
+					});
+				}
+				break;
+
 			case "toolcall_start":
 			case "toolcall_delta":
 			case "toolcall_end":

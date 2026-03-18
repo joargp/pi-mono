@@ -175,6 +175,11 @@ export interface AgentContext {
 /**
  * Events emitted by the Agent for UI updates.
  * These events provide fine-grained lifecycle information for messages, turns, and tool executions.
+ *
+ * Text and thinking content use start/delta/end events instead of message_update to avoid
+ * O(N²) storage growth. Delta events carry only the incremental text; start and end events
+ * include the full message for state synchronization. Tool call events still use message_update
+ * since they are infrequent and small.
  */
 export type AgentEvent =
 	// Agent lifecycle
@@ -185,9 +190,17 @@ export type AgentEvent =
 	| { type: "turn_end"; message: AgentMessage; toolResults: ToolResultMessage[] }
 	// Message lifecycle - emitted for user, assistant, and toolResult messages
 	| { type: "message_start"; message: AgentMessage }
-	// Only emitted for assistant messages during streaming
+	// Only emitted for assistant messages during streaming (tool call events only)
 	| { type: "message_update"; message: AgentMessage; assistantMessageEvent: AssistantMessageEvent }
 	| { type: "message_end"; message: AgentMessage }
+	// Text content lifecycle (lightweight: deltas carry only incremental text)
+	| { type: "text_start"; contentIndex: number; message: AgentMessage }
+	| { type: "text_delta"; contentIndex: number; delta: string }
+	| { type: "text_end"; contentIndex: number; content: string; message: AgentMessage }
+	// Thinking content lifecycle (lightweight: deltas carry only incremental text)
+	| { type: "thinking_start"; contentIndex: number; message: AgentMessage }
+	| { type: "thinking_delta"; contentIndex: number; delta: string }
+	| { type: "thinking_end"; contentIndex: number; content: string; message: AgentMessage }
 	// Tool execution lifecycle
 	| { type: "tool_execution_start"; toolCallId: string; toolName: string; args: any }
 	| { type: "tool_execution_update"; toolCallId: string; toolName: string; args: any; partialResult: any }

@@ -474,6 +474,20 @@ export class Agent {
 						this._state.streamMessage = event.message;
 						break;
 
+					case "text_start":
+					case "text_end":
+					case "thinking_start":
+					case "thinking_end":
+						partial = event.message;
+						this._state.streamMessage = event.message;
+						break;
+
+					case "text_delta":
+					case "thinking_delta":
+						// Lightweight delta - partialMessage is already updated in agent-loop
+						// via event.partial, so streamMessage reference is current
+						break;
+
 					case "message_end":
 						partial = null;
 						this._state.streamMessage = null;
