@@ -173,6 +173,25 @@ export class AgentInterface extends LitElement {
 					}
 					this.requestUpdate();
 					break;
+				case "text_start":
+				case "thinking_start":
+				case "text_end":
+				case "thinking_end":
+					if (this._streamingContainer) {
+						const isStreaming = this.session?.state.isStreaming || false;
+						this._streamingContainer.isStreaming = isStreaming;
+						this._streamingContainer.setMessage(ev.message, !isStreaming);
+					}
+					this.requestUpdate();
+					break;
+				case "text_delta":
+				case "thinking_delta":
+					// Content is mutated in-place via shared reference - just re-render
+					if (this._streamingContainer) {
+						this._streamingContainer.setMessage(this.session?.state.streamMessage ?? null, false);
+					}
+					this.requestUpdate();
+					break;
 			}
 		});
 	}
