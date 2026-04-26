@@ -542,7 +542,9 @@ export class Agent {
 				break;
 
 			case "agent_end":
+				this._state.isStreaming = false;
 				this._state.streamingMessage = undefined;
+				this._state.pendingToolCalls = new Set<string>();
 				break;
 		}
 
