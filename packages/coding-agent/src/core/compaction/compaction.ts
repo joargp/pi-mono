@@ -171,9 +171,27 @@ export interface ContextUsageEstimate {
 	lastUsageIndex: number | null;
 }
 
+function getLatestCompactionTimestamp(messages: AgentMessage[]): number | null {
+	let latestTimestamp: number | null = null;
+	for (const message of messages) {
+		if (message.role !== "compactionSummary") continue;
+		latestTimestamp = Math.max(latestTimestamp ?? Number.NEGATIVE_INFINITY, message.timestamp);
+	}
+	return latestTimestamp;
+}
+
 function getLastAssistantUsageInfo(messages: AgentMessage[]): { usage: Usage; index: number } | undefined {
+	const latestCompactionTimestamp = getLatestCompactionTimestamp(messages);
 	for (let i = messages.length - 1; i >= 0; i--) {
-		const usage = getAssistantUsage(messages[i]);
+		const message = messages[i];
+		if (
+			latestCompactionTimestamp !== null &&
+			message.role === "assistant" &&
+			message.timestamp <= latestCompactionTimestamp
+		) {
+			continue;
+		}
+		const usage = getAssistantUsage(message);
 		if (usage) return { usage, index: i };
 	}
 	return undefined;
