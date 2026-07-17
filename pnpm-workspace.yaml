@@ -1,0 +1,3 @@
+packages:
+  - 'packages/*'
+# Examples intentionally remain standalone npm fixtures; their package-lock files are test inputs.

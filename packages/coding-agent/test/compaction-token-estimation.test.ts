@@ -1,8 +1,8 @@
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { AssistantMessage, Usage } from "@earendil-works/pi-ai";
 import { describe, expect, it } from "vitest";
-import { estimateContextTokens } from "../src/core/compaction/index.js";
-import { createCompactionSummaryMessage } from "../src/core/messages.js";
+import { estimateContextTokens } from "../src/core/compaction/index.ts";
+import { createCompactionSummaryMessage } from "../src/core/messages.ts";
 
 function createUsage(totalTokens: number): Usage {
 	return {

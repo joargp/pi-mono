@@ -11929,13 +11929,13 @@ export const MODELS = {
 			reasoning: true,
 			input: ["text", "image"],
 			cost: {
-				input: 0.14,
+				input: 0.149,
 				output: 1,
 				cacheRead: 0,
 				cacheWrite: 0,
 			},
 			contextWindow: 262144,
-			maxTokens: 262140,
+			maxTokens: 4096,
 		} satisfies Model<"openai-completions">,
 		"qwen/qwen3.6-flash": {
 			id: "qwen/qwen3.6-flash",

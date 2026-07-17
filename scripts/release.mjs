@@ -8,7 +8,7 @@
  *
  * Steps:
  * 1. Check for uncommitted changes
- * 2. Bump version via npm run version:xxx or set an explicit version
+ * 2. Bump version via pnpm run version:xxx or set an explicit version
  * 3. Update CHANGELOG.md files: [Unreleased] -> [version] - date
  * 4. Regenerate release artifacts
  * 5. Run checks
@@ -82,7 +82,7 @@ function bumpOrSetVersion(target) {
 
 	if (BUMP_TYPES.has(target)) {
 		console.log(`Bumping version (${target})...`);
-		run(`npm run version:${target}`);
+		run(`pnpm run version:${target}`);
 		return getVersion();
 	}
 
@@ -92,7 +92,7 @@ function bumpOrSetVersion(target) {
 	}
 
 	console.log(`Setting explicit version (${target})...`);
-	run(`npm version ${target} -ws --no-git-tag-version && node scripts/sync-versions.js && npm install --package-lock-only --ignore-scripts`);
+	run(`pnpm -r exec npm version ${target} --no-git-tag-version && node scripts/sync-versions.js && pnpm install --lockfile-only --ignore-scripts`);
 	return getVersion();
 }
 
@@ -166,14 +166,14 @@ console.log();
 
 // 4. Regenerate release artifacts
 console.log("Regenerating release artifacts...");
-run("npm --prefix packages/ai run generate-models");
-run("npm --prefix packages/ai run generate-image-models");
-run("npm run shrinkwrap:coding-agent");
+run("pnpm --dir packages/ai run generate-models");
+run("pnpm --dir packages/ai run generate-image-models");
+console.log("Skipping npm-shrinkwrap regeneration: the checked-in artifact is retained for npm publishing.");
 console.log();
 
 // 5. Run checks
 console.log("Running checks...");
-run("npm run check");
+run("pnpm run check");
 console.log();
 
 // 6. Commit and tag

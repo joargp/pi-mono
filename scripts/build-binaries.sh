@@ -7,9 +7,9 @@
 #   ./scripts/build-binaries.sh [--skip-install] [--skip-deps] [--skip-build] [--platform <platform>] [--out <dir>]
 #
 # Options:
-#   --skip-install      Skip npm ci
+#   --skip-install      Skip pnpm install
 #   --skip-deps         Skip installing cross-platform dependencies
-#   --skip-build        Skip npm run build
+#   --skip-build        Skip pnpm run build
 #   --platform <name>   Build only for specified platform (darwin-arm64, darwin-x64, linux-x64, linux-arm64, windows-x64, windows-arm64)
 #   --out <dir>         Output directory (default: packages/coding-agent/binaries)
 #
@@ -83,18 +83,18 @@ fi
 
 if [[ "$SKIP_INSTALL" == "false" ]]; then
     echo "==> Installing dependencies..."
-    npm ci --ignore-scripts
+    pnpm install --frozen-lockfile --ignore-scripts
 else
-    echo "==> Skipping npm ci (--skip-install)"
+    echo "==> Skipping pnpm install (--skip-install)"
 fi
 
 if [[ "$SKIP_DEPS" == "false" ]]; then
     echo "==> Installing cross-platform native bindings..."
-    # npm ci only installs optional deps for the current platform
+    # pnpm install only installs optional deps for the current platform
     # We need all platform bindings for bun cross-compilation
     # Use --force to bypass platform checks (os/cpu restrictions in package.json)
     # Install all in one command to avoid npm removing packages from previous installs
-    npm install --no-save --package-lock=false --force --ignore-scripts \
+    pnpm add --no-save --lockfile=false --force --ignore-scripts --ignore-workspace-root-check \
         @mariozechner/clipboard-darwin-arm64@0.3.6 \
         @mariozechner/clipboard-darwin-x64@0.3.6 \
         @mariozechner/clipboard-linux-x64-gnu@0.3.6 \
@@ -107,7 +107,7 @@ fi
 
 if [[ "$SKIP_BUILD" == "false" ]]; then
     echo "==> Building all packages..."
-    npm run build
+    pnpm run build
 else
     echo "==> Skipping package build (--skip-build)"
 fi

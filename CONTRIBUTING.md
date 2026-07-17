@@ -52,7 +52,7 @@ Do not open a PR unless you have already been approved with `lgtm`.
 Before submitting a PR:
 
 ```bash
-npm run check
+pnpm run check
 ./test.sh
 ```
 
