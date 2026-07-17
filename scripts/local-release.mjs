@@ -178,8 +178,19 @@ function packPackage(pkg, tarballDirectory) {
 		capture: true,
 		cwd: pkg.directory,
 	});
-	const packed = JSON.parse(output)[0];
-	return join(tarballDirectory, packed.filename);
+	const parsed = JSON.parse(output);
+	const packed = Array.isArray(parsed) ? parsed[0] : parsed;
+	if (!packed || typeof packed.filename !== "string" || packed.filename.length === 0) {
+		throw new Error(`pnpm pack returned an invalid JSON result for ${pkg.name}`);
+	}
+	const tarball = isAbsolute(packed.filename) ? resolve(packed.filename) : resolve(tarballDirectory, packed.filename);
+	if (!isInsidePath(tarball, resolve(tarballDirectory))) {
+		throw new Error(`pnpm pack returned a filename outside the tarball directory: ${packed.filename}`);
+	}
+	if (!existsSync(tarball)) {
+		throw new Error(`pnpm pack did not create the reported tarball: ${tarball}`);
+	}
+	return tarball;
 }
 
 const options = parseArgs();

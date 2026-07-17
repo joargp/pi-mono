@@ -88,19 +88,38 @@ else
     echo "==> Skipping pnpm install (--skip-install)"
 fi
 
+NATIVE_DEPS_DIR=""
+cleanup() {
+    if [[ -n "$NATIVE_DEPS_DIR" ]]; then
+        rm -rf "$NATIVE_DEPS_DIR"
+    fi
+}
+trap cleanup EXIT
+
 if [[ "$SKIP_DEPS" == "false" ]]; then
-    echo "==> Installing cross-platform native bindings..."
-    # pnpm install only installs optional deps for the current platform
-    # We need all platform bindings for bun cross-compilation
-    # Use --force to bypass platform checks (os/cpu restrictions in package.json)
-    # Install all in one command to avoid npm removing packages from previous installs
-    pnpm add --no-save --lockfile=false --force --ignore-scripts --ignore-workspace-root-check \
-        @mariozechner/clipboard-darwin-arm64@0.3.6 \
-        @mariozechner/clipboard-darwin-x64@0.3.6 \
-        @mariozechner/clipboard-linux-x64-gnu@0.3.6 \
-        @mariozechner/clipboard-linux-arm64-gnu@0.3.6 \
-        @mariozechner/clipboard-win32-x64-msvc@0.3.6 \
-        @mariozechner/clipboard-win32-arm64-msvc@0.3.6
+    echo "==> Installing cross-platform native bindings in an isolated workspace..."
+    # Keep the reviewed workspace manifests and lockfile immutable. The isolated
+    # workspace uses the same frozen lock and asks pnpm to materialize every
+    # architecture needed by Bun cross-compilation.
+    NATIVE_DEPS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/pi-native-deps.XXXXXX")"
+    mkdir -p "$NATIVE_DEPS_DIR/packages"
+    cp package.json pnpm-lock.yaml "$NATIVE_DEPS_DIR/"
+    cp pnpm-workspace.yaml "$NATIVE_DEPS_DIR/"
+    for package in ai agent tui coding-agent; do
+        mkdir -p "$NATIVE_DEPS_DIR/packages/$package"
+        cp "packages/$package/package.json" "$NATIVE_DEPS_DIR/packages/$package/"
+    done
+    cat >> "$NATIVE_DEPS_DIR/pnpm-workspace.yaml" <<'EOF'
+supportedArchitectures:
+  os: [darwin, linux, win32]
+  cpu: [arm64, x64]
+  libc: [glibc, musl]
+EOF
+    pnpm --dir "$NATIVE_DEPS_DIR" install \
+        --filter @earendil-works/pi-coding-agent \
+        --prod \
+        --frozen-lockfile \
+        --ignore-scripts
 else
     echo "==> Skipping cross-platform native bindings (--skip-deps)"
 fi
@@ -114,6 +133,23 @@ fi
 
 echo "==> Building binaries..."
 PHOTON_WASM="$(node --input-type=module -e "import { createRequire } from 'node:module'; const require = createRequire(new URL('./packages/coding-agent/package.json', import.meta.url)); console.log(require.resolve('@silvia-odwyer/photon-node/photon_rs_bg.wasm'));")"
+CLIPBOARD_DIR="$(node --input-type=module -e "import { dirname } from 'node:path'; import { createRequire } from 'node:module'; const require = createRequire(new URL('./packages/coding-agent/package.json', import.meta.url)); console.log(dirname(require.resolve('@mariozechner/clipboard/package.json')));")"
+CLIPBOARD_RESOLUTION_ROOT="$(pwd)"
+if [[ -n "$NATIVE_DEPS_DIR" ]]; then
+    CLIPBOARD_RESOLUTION_ROOT="$NATIVE_DEPS_DIR"
+fi
+
+resolve_clipboard_native_dir() {
+    node --input-type=module -e "
+        import { dirname, join } from 'node:path';
+        import { pathToFileURL } from 'node:url';
+        import { createRequire } from 'node:module';
+        const codingAgentRequire = createRequire(pathToFileURL(join(process.argv[1], 'packages/coding-agent/package.json')));
+        const clipboardRequire = createRequire(codingAgentRequire.resolve('@mariozechner/clipboard/package.json'));
+        console.log(dirname(clipboardRequire.resolve('@mariozechner/' + process.argv[2] + '/package.json')));
+    " "$CLIPBOARD_RESOLUTION_ROOT" "$1"
+}
+
 cd packages/coding-agent
 
 # Clean previous builds
@@ -175,9 +211,10 @@ for platform in "${PLATFORMS[@]}"; do
             clipboard_native_package="clipboard-win32-arm64-msvc"
             ;;
     esac
+    clipboard_native_dir="$(resolve_clipboard_native_dir "$clipboard_native_package")"
     mkdir -p "$OUTPUT_DIR/$platform/node_modules/@mariozechner"
-    cp -r ../../node_modules/@mariozechner/clipboard "$OUTPUT_DIR/$platform/node_modules/@mariozechner/"
-    cp -r ../../node_modules/@mariozechner/$clipboard_native_package "$OUTPUT_DIR/$platform/node_modules/@mariozechner/"
+    cp -r "$CLIPBOARD_DIR" "$OUTPUT_DIR/$platform/node_modules/@mariozechner/clipboard"
+    cp -r "$clipboard_native_dir" "$OUTPUT_DIR/$platform/node_modules/@mariozechner/$clipboard_native_package"
 
     # Copy terminal input native helpers next to compiled binaries.
     if [[ "$platform" == darwin-* ]]; then
