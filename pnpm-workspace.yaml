@@ -1,3 +1,7 @@
 packages:
   - 'packages/*'
 # Examples intentionally remain standalone npm fixtures; their package-lock files are test inputs.
+overrides:
+  rimraf: 6.1.2
+  gaxios>rimraf: 6.1.2
+minimumReleaseAge: 2880

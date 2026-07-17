@@ -113,6 +113,7 @@ else
 fi
 
 echo "==> Building binaries..."
+PHOTON_WASM="$(node --input-type=module -e "import { createRequire } from 'node:module'; const require = createRequire(new URL('./packages/coding-agent/package.json', import.meta.url)); console.log(require.resolve('@silvia-odwyer/photon-node/photon_rs_bg.wasm'));")"
 cd packages/coding-agent
 
 # Clean previous builds
@@ -145,7 +146,7 @@ for platform in "${PLATFORMS[@]}"; do
     cp package.json "$OUTPUT_DIR/$platform/"
     cp README.md "$OUTPUT_DIR/$platform/"
     cp CHANGELOG.md "$OUTPUT_DIR/$platform/"
-    cp ../../node_modules/@silvia-odwyer/photon-node/photon_rs_bg.wasm "$OUTPUT_DIR/$platform/"
+    cp "$PHOTON_WASM" "$OUTPUT_DIR/$platform/"
     mkdir -p "$OUTPUT_DIR/$platform/theme"
     cp dist/modes/interactive/theme/*.json "$OUTPUT_DIR/$platform/theme/"
     mkdir -p "$OUTPUT_DIR/$platform/assets"

@@ -168,7 +168,7 @@ console.log();
 console.log("Regenerating release artifacts...");
 run("pnpm --dir packages/ai run generate-models");
 run("pnpm --dir packages/ai run generate-image-models");
-console.log("Skipping npm-shrinkwrap regeneration: the checked-in artifact is retained for npm publishing.");
+run("pnpm run shrinkwrap:coding-agent");
 console.log();
 
 // 5. Run checks

@@ -17,6 +17,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Activate pinned pnpm for cache lookup
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.13.1 --activate
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -30,7 +35,9 @@ jobs:
           sudo ln -s $(which fdfind) /usr/local/bin/fd
 
       - name: Enable pnpm
-        run: corepack enable
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.13.1 --activate
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
